@@ -16,7 +16,10 @@ class LightstickApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '手燈控制 MVP',
-      theme: ThemeData(colorSchemeSeed: Colors.pinkAccent, useMaterial3: true),
+      theme: ThemeData(
+        colorSchemeSeed: Colors.pinkAccent,
+        useMaterial3: true,
+      ),
       home: const ScanScreen(),
     );
   }
@@ -33,17 +36,9 @@ class LightstickService {
   /// 01 01 0b 00 00 [R] [G] [B] 00 00 7e
   Uint8List buildColorPacket(int r, int g, int b) {
     return Uint8List.fromList([
-      0x01,
-      0x01,
-      0x0b,
-      0x00,
-      0x00,
-      r & 0xFF,
-      g & 0xFF,
-      b & 0xFF,
-      0x00,
-      0x00,
-      0x7e,
+      0x01, 0x01, 0x0b, 0x00, 0x00,
+      r & 0xFF, g & 0xFF, b & 0xFF,
+      0x00, 0x00, 0x7e,
     ]);
   }
 
@@ -51,8 +46,7 @@ class LightstickService {
   /// 自動挑出支援 writeWithoutResponse 的那一個（對應我們抓到的 Write Command 0x52）。
   /// 如果之後發現抓錯，可以把這段改成用固定的 Service/Characteristic UUID 比對。
   Future<BluetoothCharacteristic?> discoverWritableCharacteristic(
-    BluetoothDevice d,
-  ) async {
+      BluetoothDevice d) async {
     final services = await d.discoverServices();
     BluetoothCharacteristic? candidate;
 
@@ -120,9 +114,13 @@ class _ScanScreenState extends State<ScanScreen> {
     _sub?.cancel();
     _sub = FlutterBluePlus.scanResults.listen((results) {
       setState(() {
+        // 不再過濾掉沒有廣播名稱的裝置——很多手燈在連線前
+        // 廣播封包裡不帶名稱，過濾掉會導致掃不到它們。
+        // 改成依訊號強度排序，方便找到離手機最近（通常訊號最強）的裝置。
+        final sorted = [...results]..sort((a, b) => b.rssi.compareTo(a.rssi));
         _results
           ..clear()
-          ..addAll(results.where((r) => r.device.platformName.isNotEmpty));
+          ..addAll(sorted);
       });
     });
 
@@ -203,14 +201,19 @@ class _ScanScreenState extends State<ScanScreen> {
           if (_scanning) const LinearProgressIndicator(),
           Expanded(
             child: _results.isEmpty
-                ? Center(child: Text(_scanning ? '掃描中...' : '沒有找到裝置，點右上角重新掃描'))
+                ? Center(
+                    child: Text(_scanning ? '掃描中...' : '沒有找到裝置，點右上角重新掃描'),
+                  )
                 : ListView.builder(
                     itemCount: _results.length,
                     itemBuilder: (context, i) {
                       final r = _results[i];
+                      final name = r.device.platformName.isNotEmpty
+                          ? r.device.platformName
+                          : '(未知名稱裝置)';
                       return ListTile(
                         leading: const Icon(Icons.bluetooth),
-                        title: Text(r.device.platformName),
+                        title: Text(name),
                         subtitle: Text(r.device.remoteId.str),
                         trailing: Text('${r.rssi} dBm'),
                         onTap: () => _connect(r.device),
@@ -261,21 +264,15 @@ class _ColorControlScreenState extends State<ColorControlScreen> {
       await widget.service.sendColor(r, g, b);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('送出失敗: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('送出失敗: $e')));
       }
     } finally {
       if (mounted) setState(() => _sending = false);
     }
   }
 
-  Widget _slider(
-    String label,
-    int value,
-    ValueChanged<int> onChanged,
-    Color trackColor,
-  ) {
+  Widget _slider(String label, int value, ValueChanged<int> onChanged, Color trackColor) {
     return Row(
       children: [
         SizedBox(width: 24, child: Text(label)),
@@ -318,7 +315,9 @@ class _ColorControlScreenState extends State<ColorControlScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('已連線：${widget.device.platformName}')),
+      appBar: AppBar(
+        title: Text('已連線：${widget.device.platformName}'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -334,8 +333,8 @@ class _ColorControlScreenState extends State<ColorControlScreen> {
               alignment: Alignment.center,
               child: Text(
                 '#${r.toRadixString(16).padLeft(2, '0')}'
-                        '${g.toRadixString(16).padLeft(2, '0')}'
-                        '${b.toRadixString(16).padLeft(2, '0')}'
+                '${g.toRadixString(16).padLeft(2, '0')}'
+                '${b.toRadixString(16).padLeft(2, '0')}'
                     .toUpperCase(),
                 style: TextStyle(
                   color: (r + g + b) > 380 ? Colors.black : Colors.white,
