@@ -199,6 +199,10 @@ class _ScanScreenState extends State<ScanScreen> {
       body: Column(
         children: [
           if (_scanning) const LinearProgressIndicator(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text('共掃到 ${_results.length} 台裝置（含未知名稱）'),
+          ),
           Expanded(
             child: _results.isEmpty
                 ? Center(
@@ -211,10 +215,17 @@ class _ScanScreenState extends State<ScanScreen> {
                       final name = r.device.platformName.isNotEmpty
                           ? r.device.platformName
                           : '(未知名稱裝置)';
+                      final serviceUuids = r.advertisementData.serviceUuids
+                          .map((u) => u.toString())
+                          .join(', ');
                       return ListTile(
                         leading: const Icon(Icons.bluetooth),
                         title: Text(name),
-                        subtitle: Text(r.device.remoteId.str),
+                        subtitle: Text(
+                          '${r.device.remoteId.str}'
+                          '${serviceUuids.isNotEmpty ? '\nUUID: $serviceUuids' : ''}',
+                        ),
+                        isThreeLine: serviceUuids.isNotEmpty,
                         trailing: Text('${r.rssi} dBm'),
                         onTap: () => _connect(r.device),
                       );
