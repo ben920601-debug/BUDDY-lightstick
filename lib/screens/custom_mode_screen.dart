@@ -25,11 +25,54 @@ class _CustomModeScreenState extends State<CustomModeScreen> {
   bool _blinkEnabled = false;
   bool _sending = false;
   Timer? _debounce;
+  Timer? _blinkTimer;
+
+  // 從實測封包分析出來的：官方 App 的閃爍其實就是用已知的換色指令，
+  // 在「設定顏色」跟「熄燈（RGB 000000）」之間快速交替，沒有專屬的閃爍指令。
+  // 實測間隔大約 120~200ms，這裡取中間值。
+  static const Duration _blinkInterval = Duration(milliseconds: 160);
 
   void _onColorChanged(Color c) {
     setState(() => _color = c);
+    if (_blinkEnabled) {
+      // 閃爍計時器會在下一次「亮燈」的 tick 自動用上最新的 _color，
+      // 這裡不用額外送出，避免跟閃爍節奏互相打架造成畫面卡頓
+      return;
+    }
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 60), _send);
+    _debounce = Timer(const Duration(milliseconds: 30), _send);
+  }
+
+  void _toggleBlink(bool enabled) {
+    setState(() => _blinkEnabled = enabled);
+    if (enabled) {
+      _startBlink();
+    } else {
+      _stopBlink();
+      _send(); // 關閉閃爍後，把手燈恢復成目前選的顏色（常亮）
+    }
+  }
+
+  void _startBlink() {
+    _blinkTimer?.cancel();
+    bool lightOn = true;
+    _blinkTimer = Timer.periodic(_blinkInterval, (_) async {
+      try {
+        if (lightOn) {
+          await widget.service.sendColor(_color.red, _color.green, _color.blue);
+        } else {
+          await widget.service.turnOff();
+        }
+        lightOn = !lightOn;
+      } catch (_) {
+        // 單次送出失敗先忽略，下一個 tick 再試，避免閃爍中斷
+      }
+    });
+  }
+
+  void _stopBlink() {
+    _blinkTimer?.cancel();
+    _blinkTimer = null;
   }
 
   Future<void> _send() async {
@@ -50,6 +93,7 @@ class _CustomModeScreenState extends State<CustomModeScreen> {
   @override
   void dispose() {
     _debounce?.cancel();
+    _blinkTimer?.cancel();
     super.dispose();
   }
 
@@ -100,11 +144,11 @@ class _CustomModeScreenState extends State<CustomModeScreen> {
                 child: SwitchListTile(
                   title: const Text('閃爍模式'),
                   subtitle: const Text(
-                    '尚未支援：閃爍指令的封包還沒抓取，'
-                    '需要再用 PacketLogger 抓一次官方 App 按下閃爍時的封包才能開放',
+                    '交替送出「亮燈色」與「熄燈」封包做出閃爍效果，'
+                    '跟官方 App 的實作方式相同',
                   ),
                   value: _blinkEnabled,
-                  onChanged: null, // 停用，等協定補齊後再開放
+                  onChanged: _toggleBlink,
                 ),
               ),
             ],

@@ -53,6 +53,11 @@ class _ConcertModeScreenState extends State<ConcertModeScreen> {
 
   Future<bool> _ensureMicPermission() async {
     final status = await Permission.microphone.request();
+    if (status.isPermanentlyDenied) {
+      // 使用者之前拒絕過，這次 request() 不會再跳系統彈窗，
+      // 只能引導去系統設定手動開啟
+      return false;
+    }
     return status.isGranted;
   }
 
@@ -158,11 +163,19 @@ class _ConcertModeScreenState extends State<ConcertModeScreen> {
               ),
               const SizedBox(height: 20),
               if (_permissionDenied)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    '沒有麥克風權限，請到「設定 → 隱私權 → 麥克風」開啟後再試一次',
-                    style: TextStyle(color: Colors.red),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Column(
+                    children: [
+                      const Text(
+                        '沒有麥克風權限，App 才能收音判斷節奏',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      TextButton(
+                        onPressed: openAppSettings,
+                        child: const Text('前往系統設定開啟權限'),
+                      ),
+                    ],
                   ),
                 ),
               Text('目前音量: ${_currentDb.toStringAsFixed(1)} dB',

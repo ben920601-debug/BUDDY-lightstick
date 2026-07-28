@@ -49,5 +49,7 @@
 	<string>需要藍牙權限以連接並控制手燈</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>需要藍牙權限以連接並控制手燈</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>需要麥克風權限以偵測現場音樂節奏來同步手燈</string>
 </dict>
 </plist>
