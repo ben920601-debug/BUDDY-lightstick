@@ -29,7 +29,16 @@ flutter create --project-name lightstick_controller .
 <string>需要藍牙權限以連接並控制手燈</string>
 ```
 
-### 3. Android 權限
+### 3. 麥克風權限（演唱會模式需要，一定要加）
+
+同樣在 `ios/Runner/Info.plist` 加入：
+
+```xml
+<key>NSMicrophoneUsageDescription</key>
+<string>需要麥克風權限以偵測現場音樂節奏來同步手燈</string>
+```
+
+### 4. Android 權限
 
 `flutter_blue_plus` 官方套件通常會自動處理 manifest merge，但如果掃描不到裝置，檢查 `android/app/src/main/AndroidManifest.xml` 是否有：
 
@@ -50,7 +59,32 @@ flutter run
 
 1. 開 App 自動開始掃描附近 BLE 裝置
 2. 點選你的手燈裝置 → 自動連線 → 自動掃描所有 service/characteristic，找出支援 **Write Without Response** 的那一個（對應我們用 PacketLogger 抓到的 `Write Command 0x52`）
-3. 進入調色盤畫面，拖動 RGB 滑桿或點預設色塊，會即時送出封包給手燈
+3. 進入**模式選擇畫面**，選擇要用哪個模式控制手燈
+
+## 目前的檔案結構
+
+```
+lib/
+  main.dart                        入口，只負責啟動 App
+  ble/
+    lightstick_service.dart        BLE 核心邏輯（連線、組封包、送出）
+  screens/
+    scan_screen.dart               掃描裝置畫面
+    mode_select_screen.dart        模式選擇畫面
+    custom_mode_screen.dart        自訂模式：圓盤調色 + 閃爍開關
+    group_mode_screen.dart         團體模式：開發中佔位頁
+    concert_mode_screen.dart       演唱會模式：麥克風收音節拍同步
+```
+
+## 三個模式的現況
+
+**自訂模式** — 已可用。用 `flutter_colorpicker` 的 `HueRingPicker` 做圓盤調色，拖動即時送出換色封包。閃爍開關目前是**停用狀態**，因為閃爍指令的封包還沒抓過，UI 先做好等之後補協定。
+
+**團體模式** — 純佔位頁，顯示「開發中」。
+
+**演唱會模式** — 測試版原型。因為 iOS 不允許讀取其他 App 播放的音訊（系統層級限制，無法繞過），改用**手機麥克風收現場聲音**的標準做法（跟市面上手燈同步 App 原理一致）。目前是「音量突增偵測」的簡化版節奏同步，不是真正的音高辨識 AI：用麥克風分貝值的移動平均，偵測到明顯音量跳動（節拍/鼓點）就觸發閃燈。閃爍效果是用已知的換色協定快速切換顏色/熄燈做出的「軟體閃爍」，不依賴尚未抓取的專屬閃爍指令。
+
+如果之後想做更精準的音高/節奏辨識（例如你原本規劃的 Python AI 分析），可以在這個基礎上擴充：手機端持續負責收音跟藍牙傳輸，把音訊即時傳給電腦上的 Python 後端做分析，電腦算完結果透過區域網路丟回手機，手機再轉成藍牙封包送給手燈。
 
 ## 已知限制 / 之後可以做的事
 
