@@ -88,27 +88,36 @@ class ScanScreen extends StatefulWidget {
 class _ScanScreenState extends State<ScanScreen> {
   final List<ScanResult> _results = [];
   StreamSubscription<List<ScanResult>>? _sub;
+  StreamSubscription<BluetoothAdapterState>? _adapterSub;
+  BluetoothAdapterState _adapterState = BluetoothAdapterState.unknown;
   bool _scanning = false;
+  String? _lastError;
 
   @override
   void initState() {
     super.initState();
-    _requestPermissionsAndScan();
+    _adapterSub = FlutterBluePlus.adapterState.listen((state) {
+      setState(() => _adapterState = state);
+      if (state == BluetoothAdapterState.on && !_scanning) {
+        _startScan();
+      }
+    });
+    _requestPermissions();
   }
 
-  Future<void> _requestPermissionsAndScan() async {
+  Future<void> _requestPermissions() async {
     await [
       Permission.bluetoothScan,
       Permission.bluetoothConnect,
       Permission.locationWhenInUse,
     ].request();
-    _startScan();
   }
 
   Future<void> _startScan() async {
     setState(() {
       _results.clear();
       _scanning = true;
+      _lastError = null;
     });
 
     _sub?.cancel();
@@ -124,13 +133,18 @@ class _ScanScreenState extends State<ScanScreen> {
       });
     });
 
-    await FlutterBluePlus.startScan(timeout: const Duration(seconds: 8));
+    try {
+      await FlutterBluePlus.startScan(timeout: const Duration(seconds: 8));
+    } catch (e) {
+      setState(() => _lastError = '掃描失敗: $e');
+    }
     setState(() => _scanning = false);
   }
 
   @override
   void dispose() {
     _sub?.cancel();
+    _adapterSub?.cancel();
     FlutterBluePlus.stopScan();
     super.dispose();
   }
@@ -199,10 +213,23 @@ class _ScanScreenState extends State<ScanScreen> {
       body: Column(
         children: [
           if (_scanning) const LinearProgressIndicator(),
+          Container(
+            width: double.infinity,
+            color: _adapterState == BluetoothAdapterState.on
+                ? Colors.green.withOpacity(0.15)
+                : Colors.red.withOpacity(0.15),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text('藍牙狀態: ${_adapterState.name}'),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text('共掃到 ${_results.length} 台裝置（含未知名稱）'),
           ),
+          if (_lastError != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(_lastError!, style: const TextStyle(color: Colors.red)),
+            ),
           Expanded(
             child: _results.isEmpty
                 ? Center(
