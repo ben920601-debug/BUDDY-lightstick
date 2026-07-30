@@ -1,4 +1,4 @@
-name: BUDDY lightstick
+name: lightstick_controller
 description: GFRIEND 手燈 顏色控制
 publish_to: 'none'
 version: 0.1.1+1
