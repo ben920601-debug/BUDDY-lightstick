@@ -95,7 +95,7 @@ class _ConcertModeScreenState extends State<ConcertModeScreen> {
   /// 用 measurement 模式減少系統自動的降噪/回音消除，避免影響 FFT 分析準確度。
   Future<void> _configureAudioSession() async {
     final session = await AudioSession.instance;
-    await session.configure(const AudioSessionConfiguration(
+    await session.configure(AudioSessionConfiguration(
       avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
       avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.defaultToSpeaker |
           AVAudioSessionCategoryOptions.mixWithOthers |
