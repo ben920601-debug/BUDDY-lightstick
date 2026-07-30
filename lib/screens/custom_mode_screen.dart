@@ -2,9 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import '../ble/lightstick_service.dart';
+import '../main.dart';
+import '../widgets/color_wheel_picker.dart';
 
 class CustomModeScreen extends StatefulWidget {
   final LightstickService service;
@@ -21,35 +22,88 @@ class CustomModeScreen extends StatefulWidget {
 }
 
 class _CustomModeScreenState extends State<CustomModeScreen> {
-  Color _color = Colors.red;
+  Color _color = kScubaBlue;
   bool _blinkEnabled = false;
   bool _sending = false;
-  Timer? _debounce;
-  Timer? _blinkTimer;
+  Color? _pendingColor;
 
-  // 從實測封包分析出來的：官方 App 的閃爍其實就是用已知的換色指令，
-  // 在「設定顏色」跟「熄燈（RGB 000000）」之間快速交替，沒有專屬的閃爍指令。
+  Timer? _blinkTimer;
+  // 從實測封包分析出來的：官方 App 的閃爍是快速交替送出
+  // 「設定顏色」跟「熄燈（RGB 000000）」封包，沒有專屬指令。
   // 實測間隔大約 120~200ms，這裡取中間值。
   static const Duration _blinkInterval = Duration(milliseconds: 160);
+
+  final List<Color> _presets = const [
+    kUltraViolet,
+    kScubaBlue,
+    kCloudDancer,
+    Colors.white,
+    Colors.red,
+    Colors.orange,
+    Colors.yellow,
+    Colors.green,
+    Colors.blue,
+    Colors.purple,
+    Colors.pink,
+  ];
 
   void _onColorChanged(Color c) {
     setState(() => _color = c);
     if (_blinkEnabled) {
-      // 閃爍計時器會在下一次「亮燈」的 tick 自動用上最新的 _color，
-      // 這裡不用額外送出，避免跟閃爍節奏互相打架造成畫面卡頓
+      // 連續閃爍計時器會在下一次「亮燈」的 tick 自動用上最新的 _color
       return;
     }
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 30), _send);
+    _sendLatestImmediately();
   }
 
-  void _toggleBlink(bool enabled) {
+  /// 不用 debounce，滑動當下馬上送出；如果上一次還在傳輸中，
+  /// 就記住最新顏色，等上一次傳完立刻接著送，確保手燈跟畫面幾乎同步。
+  Future<void> _sendLatestImmediately() async {
+    _pendingColor = _color;
+    if (_sending) return;
+    _sending = true;
+    while (_pendingColor != null) {
+      final toSend = _pendingColor!;
+      _pendingColor = null;
+      try {
+        await widget.service.sendColor(toSend.red, toSend.green, toSend.blue);
+      } catch (_) {
+        // 單次失敗先忽略，拖動還在繼續的話下一個顏色會馬上補上
+      }
+    }
+    _sending = false;
+  }
+
+  Future<void> _pickPreset(Color c) async {
+    setState(() => _color = c);
+    if (!_blinkEnabled) {
+      await _sendLatestImmediately();
+    }
+  }
+
+  Future<void> _singleFlash() async {
+    if (_blinkEnabled) return; // 連續閃爍中不重複觸發單次閃爍
+    try {
+      await widget.service.sendColor(_color.red, _color.green, _color.blue);
+      await Future.delayed(const Duration(milliseconds: 120));
+      await widget.service.turnOff();
+      await Future.delayed(const Duration(milliseconds: 120));
+      await widget.service.sendColor(_color.red, _color.green, _color.blue);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('閃爍失敗: $e')));
+      }
+    }
+  }
+
+  void _toggleContinuousBlink(bool enabled) {
     setState(() => _blinkEnabled = enabled);
     if (enabled) {
       _startBlink();
     } else {
       _stopBlink();
-      _send(); // 關閉閃爍後，把手燈恢復成目前選的顏色（常亮）
+      _sendLatestImmediately(); // 關閉後恢復常亮
     }
   }
 
@@ -64,9 +118,7 @@ class _CustomModeScreenState extends State<CustomModeScreen> {
           await widget.service.turnOff();
         }
         lightOn = !lightOn;
-      } catch (_) {
-        // 單次送出失敗先忽略，下一個 tick 再試，避免閃爍中斷
-      }
+      } catch (_) {}
     });
   }
 
@@ -75,24 +127,8 @@ class _CustomModeScreenState extends State<CustomModeScreen> {
     _blinkTimer = null;
   }
 
-  Future<void> _send() async {
-    if (_sending) return;
-    setState(() => _sending = true);
-    try {
-      await widget.service.sendColor(_color.red, _color.green, _color.blue);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('送出失敗: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
-  }
-
   @override
   void dispose() {
-    _debounce?.cancel();
     _blinkTimer?.cancel();
     super.dispose();
   }
@@ -107,49 +143,80 @@ class _CustomModeScreenState extends State<CustomModeScreen> {
           child: Column(
             children: [
               Container(
-                height: 100,
+                height: 60,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: _color,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.black12, width: 2),
                 ),
-                alignment: Alignment.center,
-                child: Text(
-                  '#${_color.red.toRadixString(16).padLeft(2, '0')}'
-                  '${_color.green.toRadixString(16).padLeft(2, '0')}'
-                  '${_color.blue.toRadixString(16).padLeft(2, '0')}'
-                      .toUpperCase(),
-                  style: TextStyle(
-                    color: _color.computeLuminance() > 0.5
-                        ? Colors.black
-                        : Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
               ),
-              const SizedBox(height: 24),
-              // 圓盤調色，帶漸層感，拖動即時更新
-              HueRingPicker(
-                pickerColor: _color,
-                onColorChanged: _onColorChanged,
-                displayThumbColor: true,
-                enableAlpha: false,
+              const SizedBox(height: 20),
+              // 圓盤調色，拖動即時同步（見 _onColorChanged）
+              Center(
+                child: ColorWheelPicker(
+                  color: _color,
+                  onColorChanged: _onColorChanged,
+                  size: 280,
+                ),
               ),
               const SizedBox(height: 12),
               if (_sending) const LinearProgressIndicator(),
-              const SizedBox(height: 12),
-              Card(
-                child: SwitchListTile(
-                  title: const Text('閃爍模式'),
-                  subtitle: const Text(
-                    '交替送出「亮燈色」與「熄燈」封包做出閃爍效果，'
-                    '跟官方 App 的實作方式相同',
+              const SizedBox(height: 16),
+
+              // 單次閃爍 + 連續閃爍開關
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _blinkEnabled ? null : _singleFlash,
+                      icon: const Icon(Icons.flash_on),
+                      label: const Text('單次閃爍'),
+                    ),
                   ),
-                  value: _blinkEnabled,
-                  onChanged: _toggleBlink,
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Card(
+                      margin: EdgeInsets.zero,
+                      child: SwitchListTile(
+                        dense: true,
+                        title: const Text('連續閃爍'),
+                        value: _blinkEnabled,
+                        onChanged: _toggleContinuousBlink,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text('常用顏色',
+                    style: Theme.of(context).textTheme.titleMedium),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: _presets.map((c) {
+                  final selected = c.value == _color.value;
+                  return GestureDetector(
+                    onTap: () => _pickPreset(c),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: c,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: selected ? kUltraViolet : Colors.black26,
+                          width: selected ? 3 : 1,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
             ],
           ),
