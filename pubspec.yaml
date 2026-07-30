@@ -1,11 +1,11 @@
-name: lightstick_controller
-description: GFRIEND 手燈 BLE 顏色控制 MVP
+name: BUDDY lightstick
+description: GFRIEND 手燈 顏色控制
 publish_to: 'none'
-version: 0.1.1
+version: 0.1.1+1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
-
+ 
 dependencies:
   flutter:
     sdk: flutter
@@ -13,11 +13,23 @@ dependencies:
   permission_handler: ^12.0.3
   audio_streamer: ^4.3.0
   fftea: ^1.5.0+1
-
+  audio_session: ^0.2.0
+ 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-
+  flutter_launcher_icons: ^0.14.1
+ 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icon/icon.png
+ 
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/icon.png"
+  remove_alpha_ios: true
+  background_color_ios: "#F4E9CE"
+ 

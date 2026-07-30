@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:audio_streamer/audio_streamer.dart';
+import 'package:audio_session/audio_session.dart';
 import 'package:fftea/fftea.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -87,6 +88,25 @@ class _ConcertModeScreenState extends State<ConcertModeScreen> {
     return status.isGranted;
   }
 
+  /// 錄音套件預設會把系統音訊工作階段設成錄音優先的模式，
+  /// 副作用是手機外放的音樂會被降級成類似通話的音質（單聲道、變小聲）。
+  /// 這裡明確設定：輸出優先走喇叭（defaultToSpeaker）、
+  /// 不要打斷其他 App 正在播放的聲音（mixWithOthers）、
+  /// 用 measurement 模式減少系統自動的降噪/回音消除，避免影響 FFT 分析準確度。
+  Future<void> _configureAudioSession() async {
+    final session = await AudioSession.instance;
+    await session.configure(const AudioSessionConfiguration(
+      avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
+      avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.defaultToSpeaker |
+          AVAudioSessionCategoryOptions.mixWithOthers |
+          AVAudioSessionCategoryOptions.allowBluetooth,
+      avAudioSessionMode: AVAudioSessionMode.measurement,
+      avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
+      avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
+    ));
+    await session.setActive(true);
+  }
+
   Future<void> _start() async {
     final granted = await _ensureMicPermission();
     if (!granted) {
@@ -103,6 +123,7 @@ class _ConcertModeScreenState extends State<ConcertModeScreen> {
     });
 
     try {
+      await _configureAudioSession();
       AudioStreamer().sampleRate = 44100;
       _audioSub = AudioStreamer().audioStream.listen(_onAudio, onError: (e) {
         if (mounted) {
@@ -131,6 +152,11 @@ class _ConcertModeScreenState extends State<ConcertModeScreen> {
     _audioSub = null;
     _analysisTimer?.cancel();
     _analysisTimer = null;
+    AudioSession.instance.then((s) => s.setActive(
+          false,
+          avAudioSessionSetActiveOptions:
+              AVAudioSessionSetActiveOptions.notifyOthersOnDeactivation,
+        ));
     if (mounted) setState(() => _listening = false);
   }
 
