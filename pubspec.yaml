@@ -1,7 +1,7 @@
 name: lightstick_controller
 description: GFRIEND 手燈 BLE 顏色控制 MVP
 publish_to: 'none'
-version: 0.1.0+12
+version: 0.1.1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_blue_plus: ^1.32.12
-  permission_handler: ^11.3.1
+  permission_handler: ^12.0.3
   audio_streamer: ^4.3.0
   fftea: ^1.5.0+1
 
