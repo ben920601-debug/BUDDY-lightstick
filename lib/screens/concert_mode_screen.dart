@@ -51,6 +51,7 @@ class _ConcertModeScreenState extends State<ConcertModeScreen> {
   final List<double> _hannWindow = Window.hanning(_fftSize);
 
   final List<double> _ringBuffer = [];
+  int _chunksReceived = 0;
 
   bool _listening = false;
   bool _permissionDenied = false;
@@ -98,9 +99,11 @@ class _ConcertModeScreenState extends State<ConcertModeScreen> {
     return status.isGranted;
   }
 
-  /// 明確設定音訊工作階段，讓錄音時手機喇叭外放不被降級成通話音質：
-  /// 輸出優先走喇叭、不打斷其他 App 播放、用 measurement 模式減少
-  /// 系統自動的降噪／回音消除（這些是給通話設計的，會扭曲我們要分析的波形）
+  /// 明確設定音訊工作階段的「偏好」：輸出優先走喇叭、不打斷其他 App 播放。
+  /// 注意：這裡刻意不呼叫 session.setActive(true)——實際啟用交給 record
+  /// 套件自己在 startStream 時處理，如果我們搶著啟用，會跟 record 內部
+  /// 的啟用動作互相衝突，導致錄音引擎完全沒有真的啟動（沒有錯誤訊息，
+  /// 但完全收不到音訊資料，能量條、音高都會卡住不動）。
   Future<void> _configureAudioSession() async {
     final session = await AudioSession.instance;
     await session.configure(AudioSessionConfiguration(
@@ -108,11 +111,10 @@ class _ConcertModeScreenState extends State<ConcertModeScreen> {
       avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.defaultToSpeaker |
           AVAudioSessionCategoryOptions.mixWithOthers |
           AVAudioSessionCategoryOptions.allowBluetooth,
-      avAudioSessionMode: AVAudioSessionMode.measurement,
+      avAudioSessionMode: AVAudioSessionMode.defaultMode,
       avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
       avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
     ));
-    await session.setActive(true);
   }
 
   Future<void> _start() async {
@@ -135,6 +137,7 @@ class _ConcertModeScreenState extends State<ConcertModeScreen> {
       _climaxActive = false;
       _climaxCandidateStart = null;
       _ringBuffer.clear();
+      _chunksReceived = 0;
     });
 
     try {
@@ -180,11 +183,12 @@ class _ConcertModeScreenState extends State<ConcertModeScreen> {
           false,
           avAudioSessionSetActiveOptions:
               AVAudioSessionSetActiveOptions.notifyOthersOnDeactivation,
-        ));
+        )).catchError((_) {});
     if (mounted) setState(() => _listening = false);
   }
 
   void _onAudio(Uint8List bytes) {
+    _chunksReceived++;
     final data = ByteData.sublistView(bytes);
     final n = bytes.length ~/ 2;
     for (var i = 0; i < n; i++) {
@@ -399,6 +403,14 @@ class _ConcertModeScreenState extends State<ConcertModeScreen> {
                   Text('目前音高: ${_currentFreq.toStringAsFixed(0)} Hz'),
                   Text('已觸發節拍: $_beatCount'),
                 ],
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '已收到音訊區塊: $_chunksReceived'
+                  '${_listening && _chunksReceived == 0 ? '（一直是 0 代表完全沒收到音訊，是收音本身的問題）' : ''}',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
               ),
               const SizedBox(height: 4),
               LinearProgressIndicator(
