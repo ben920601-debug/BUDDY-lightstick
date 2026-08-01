@@ -22,6 +22,7 @@ class _IntroVideoScreenState extends State<IntroVideoScreen> {
       ..initialize().then((_) {
         if (!mounted) return;
         setState(() {});
+        _controller.setVolume(0); // 靜音播放，不用重新處理影片檔案
         _controller.play();
       });
     _controller.addListener(_onTick);

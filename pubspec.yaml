@@ -1,7 +1,7 @@
 name: lightstick_controller
-description: GFRIEND 手燈 BLE 顏色控制 MVP
+description: GFRIEND Lightstick控制APP
 publish_to: 'none'
-version: 0.1.1+3
+version: 1.0.0
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
