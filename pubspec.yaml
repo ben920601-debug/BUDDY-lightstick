@@ -1,7 +1,7 @@
 name: lightstick_controller
 description: GFRIEND Lightstick控制APP
 publish_to: 'none'
-version: 1.0.1
+version: 1.0.2
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -14,7 +14,8 @@ dependencies:
   record: ^6.0.0
   fftea: ^1.5.0+1
   audio_session: ^0.2.0
-  video_player: ^2.9.2
+  url_launcher: ^6.3.1
+  google_fonts: ^6.2.1
  
 dev_dependencies:
   flutter_test:
@@ -26,7 +27,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icon/icon.png
-    - assets/video/intro.mp4
  
 flutter_launcher_icons:
   android: true

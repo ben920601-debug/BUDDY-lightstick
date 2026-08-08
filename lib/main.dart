@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-import 'screens/intro_video_screen.dart';
+import 'screens/disclaimer_gate_screen.dart';
 
 void main() {
   runApp(const LightstickApp());
 }
 
-// GFRIEND 應援色主題
-// Pantone 18-3838 Ultra Violet（紫）/ 16-4725 Scuba Blue（青藍）/ 11-4201 Cloud Dancer（米白）
+// 手燈品牌色（原本設計語彙延續，非官方應援色，純自訂配色）
 const kUltraViolet = Color(0xFF5F4B8B);
 const kScubaBlue = Color(0xFF00ABC0);
 const kCloudDancer = Color(0xFFF0EEE9);
@@ -25,14 +25,20 @@ class LightstickApp extends StatelessWidget {
     );
 
     return MaterialApp(
-      title: '手燈控制 MVP',
+      title: '手燈控制 App',
       theme: ThemeData(
         colorScheme: colorScheme,
         useMaterial3: true,
         scaffoldBackgroundColor: kCloudDancer,
+        textTheme: GoogleFonts.notoSansTcTextTheme(),
         appBarTheme: AppBarTheme(
           backgroundColor: kUltraViolet,
           foregroundColor: Colors.white,
+          titleTextStyle: GoogleFonts.baloo2(
+            fontSize: 19,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(backgroundColor: kUltraViolet),
@@ -48,7 +54,7 @@ class LightstickApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const IntroVideoScreen(),
+      home: const DisclaimerGateScreen(),
     );
   }
 }
