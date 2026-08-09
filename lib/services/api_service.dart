@@ -95,6 +95,7 @@ class BoardPost {
         adminReply: json['admin_reply'],
         createdAt: json['created_at'] ?? '',
       );
+}
 
 class AppConfig {
   final String marqueeText;
