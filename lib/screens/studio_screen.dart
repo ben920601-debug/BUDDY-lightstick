@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import '../widgets/gradient_app_bar.dart';
 import '../widgets/lightstick_glyph.dart';
 
 class StudioScreen extends StatelessWidget {
@@ -9,7 +10,7 @@ class StudioScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('工作室介紹')),
+      appBar: const GradientAppBar(title: '工作室介紹'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(

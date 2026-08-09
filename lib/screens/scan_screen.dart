@@ -5,7 +5,12 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../ble/lightstick_service.dart';
-import 'mode_select_screen.dart';
+import '../widgets/gradient_app_bar.dart';
+class ConnectedLightstick {
+  final LightstickService service;
+  final BluetoothDevice device;
+  ConnectedLightstick(this.service, this.device);
+}
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -109,11 +114,7 @@ class _ScanScreenState extends State<ScanScreen> {
       service.writeChar = char;
 
       if (!mounted) return;
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ModeSelectScreen(service: service, device: device),
-        ),
-      );
+      Navigator.of(context).pop(ConnectedLightstick(service, device));
     } catch (e) {
       if (mounted) Navigator.of(context).pop();
       _showError('連線失敗: $e');
@@ -127,8 +128,8 @@ class _ScanScreenState extends State<ScanScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('選擇手燈裝置'),
+      appBar: GradientAppBar(
+        title: '選擇手燈裝置',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

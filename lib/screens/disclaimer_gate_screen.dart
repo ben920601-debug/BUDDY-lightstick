@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../main.dart';
 import '../widgets/lightstick_glyph.dart';
-import 'scan_screen.dart';
+import 'mode_select_screen.dart';
 
 /// 進入 App 後的第一個畫面：背景 + 一個跳出視窗，
 /// 說明這是非官方、相容多款手燈的個人工具，使用者必須按確認才能繼續。
@@ -83,7 +83,7 @@ class _DisclaimerGateScreenState extends State<DisclaimerGateScreen> {
 
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const ScanScreen()),
+      MaterialPageRoute(builder: (_) => const ModeSelectScreen()),
     );
   }
 

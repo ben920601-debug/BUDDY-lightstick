@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/gradient_app_bar.dart';
+
 class GroupModeScreen extends StatelessWidget {
   const GroupModeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('團體模式')),
+      appBar: const GradientAppBar(title: '團體模式'),
       body: const Center(
         child: Padding(
           padding: EdgeInsets.all(32),

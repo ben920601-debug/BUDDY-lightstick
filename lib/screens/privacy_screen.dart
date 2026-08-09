@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../main.dart';
+import '../widgets/gradient_app_bar.dart';
 
 class PrivacyScreen extends StatelessWidget {
   const PrivacyScreen({super.key});
@@ -25,7 +26,7 @@ class PrivacyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('隱私權說明')),
+      appBar: const GradientAppBar(title: '隱私權說明'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(

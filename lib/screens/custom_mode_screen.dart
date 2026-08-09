@@ -6,6 +6,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../ble/lightstick_service.dart';
 import '../main.dart';
 import '../widgets/color_wheel_picker.dart';
+import '../widgets/gradient_app_bar.dart';
 
 class CustomModeScreen extends StatefulWidget {
   final LightstickService service;
@@ -136,7 +137,7 @@ class _CustomModeScreenState extends State<CustomModeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('自訂模式')),
+      appBar: const GradientAppBar(title: '自訂模式'),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
