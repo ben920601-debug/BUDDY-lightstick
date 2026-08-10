@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -45,7 +46,12 @@ class LightstickService {
       throw Exception('尚未找到可寫入的 characteristic，請先連線裝置');
     }
     final packet = buildColorPacket(r, g, b);
-    await c.write(packet, withoutResponse: true);
+    // 加上逾時保護：如果寫入卡住不回應，2 秒後直接判定失敗，
+    // 讓呼叫端的「送出中」狀態能解除，不會被無限期卡住。
+    await c.write(packet, withoutResponse: true).timeout(
+      const Duration(seconds: 2),
+      onTimeout: () => throw TimeoutException('BLE 寫入逾時，可能已經斷線'),
+    );
   }
 
   Future<void> turnOff() async {
