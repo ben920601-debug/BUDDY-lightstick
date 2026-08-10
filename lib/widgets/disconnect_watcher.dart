@@ -31,10 +31,18 @@ class DisconnectWatcher {
     _sub = _stream.listen((state) {
       // ignore: avoid_print
       print('[BLE] ${DateTime.now().toIso8601String()} 連線狀態變化: $_lastState -> $state');
-      // 剛連線成功的第一次狀態變化不用管，只在「原本是連上的，變成斷線」才處理
-      if (_lastState == BluetoothConnectionState.connected &&
-          state == BluetoothConnectionState.disconnected &&
-          !_dialogShowing) {
+
+      final wasConnectedThenDropped = _lastState == BluetoothConnectionState.connected &&
+          state == BluetoothConnectionState.disconnected;
+      // 修正邏輯漏洞：如果進畫面時，手燈其實「早就已經斷線」（例如閒置太久
+      // 被裝置自己斷開），監聽器收到的第一個狀態就會直接是 disconnected，
+      // 沒有經歷「連線→斷線」的轉換瞬間，導致原本的判斷完全偵測不到。
+      // 這裡改成：只要收到的是 disconnected，不管有沒有經歷轉換都處理。
+      // （flutter_blue_plus 的 connectionState 會在訂閱當下立即送出目前狀態，
+      // 所以剛 attach 就能拿到「進畫面當下」的真實連線狀態，不用另外主動查詢。）
+      final alreadyDisconnected = state == BluetoothConnectionState.disconnected;
+
+      if ((wasConnectedThenDropped || alreadyDisconnected) && !_dialogShowing) {
         _showReconnectDialog(context);
       }
       _lastState = state;
