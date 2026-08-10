@@ -30,13 +30,23 @@ class LightstickService {
     for (final s in services) {
       for (final c in s.characteristics) {
         if (c.properties.writeWithoutResponse) {
-          return c;
+          candidate = c;
+          break;
         }
         if (c.properties.write) {
           candidate ??= c;
         }
       }
+      if (candidate != null) break;
     }
+
+    if (candidate != null) {
+      // 剛連線完成、剛找到 characteristic 的當下，iOS 的藍牙堆疊
+      // 常常還沒真正準備好可以送出 writeWithoutResponse，第一次寫入
+      // 很容易整個卡住不回應。這裡先等連線穩定一下，避免踩到這個坑。
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+
     return candidate;
   }
 
