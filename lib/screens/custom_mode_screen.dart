@@ -73,18 +73,27 @@ class _CustomModeScreenState extends State<CustomModeScreen> {
   /// 就記住最新顏色，等上一次傳完立刻接著送，確保手燈跟畫面幾乎同步。
   Future<void> _sendLatestImmediately() async {
     _pendingColor = _color;
-    if (_sending) return;
+    if (_sending) {
+      // ignore: avoid_print
+      print('[UI] 上一次送出還沒完成，這次跳過（_sending 還是 true）');
+      return;
+    }
     _sending = true;
+    // ignore: avoid_print
+    print('[UI] 開始送出迴圈');
     while (_pendingColor != null) {
       final toSend = _pendingColor!;
       _pendingColor = null;
       try {
         await widget.service.sendColor(toSend.red, toSend.green, toSend.blue);
-      } catch (_) {
-        // 單次失敗先忽略，拖動還在繼續的話下一個顏色會馬上補上
+      } catch (e) {
+        // ignore: avoid_print
+        print('[UI] 送出例外: $e');
       }
     }
     _sending = false;
+    // ignore: avoid_print
+    print('[UI] 送出迴圈結束，_sending 恢復 false');
   }
 
   Future<void> _pickPreset(Color c) async {

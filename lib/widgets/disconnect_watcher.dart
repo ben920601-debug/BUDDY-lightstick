@@ -29,6 +29,8 @@ class DisconnectWatcher {
 
   void attach(BuildContext context) {
     _sub = _stream.listen((state) {
+      // ignore: avoid_print
+      print('[BLE] ${DateTime.now().toIso8601String()} 連線狀態變化: $_lastState -> $state');
       // 剛連線成功的第一次狀態變化不用管，只在「原本是連上的，變成斷線」才處理
       if (_lastState == BluetoothConnectionState.connected &&
           state == BluetoothConnectionState.disconnected &&
