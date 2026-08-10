@@ -11,6 +11,7 @@ import 'package:record/record.dart';
 
 import '../ble/lightstick_service.dart';
 import '../main.dart';
+import '../widgets/disconnect_watcher.dart';
 import '../widgets/gradient_app_bar.dart';
 
 /// 演唱會模式 v3
@@ -40,6 +41,18 @@ class ConcertModeScreen extends StatefulWidget {
 }
 
 class _ConcertModeScreenState extends State<ConcertModeScreen> {
+  late final DisconnectWatcher _disconnectWatcher;
+
+  @override
+  void initState() {
+    super.initState();
+    _disconnectWatcher = DisconnectWatcher(
+      device: widget.device,
+      service: widget.service,
+      onGoBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
+    )..attach(context);
+  }
+
   static const int _fftSize = 2048;
   static const double _minFreqHz = 80;
   static const double _maxFreqHz = 2000;
@@ -351,6 +364,7 @@ class _ConcertModeScreenState extends State<ConcertModeScreen> {
   @override
   void dispose() {
     _stop();
+    _disconnectWatcher.detach();
     super.dispose();
   }
 

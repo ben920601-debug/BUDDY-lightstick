@@ -6,6 +6,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../ble/lightstick_service.dart';
 import '../main.dart';
 import '../widgets/color_wheel_picker.dart';
+import '../widgets/disconnect_watcher.dart';
 import '../widgets/gradient_app_bar.dart';
 
 class CustomModeScreen extends StatefulWidget {
@@ -27,6 +28,17 @@ class _CustomModeScreenState extends State<CustomModeScreen> {
   bool _blinkEnabled = false;
   bool _sending = false;
   Color? _pendingColor;
+  late final DisconnectWatcher _disconnectWatcher;
+
+  @override
+  void initState() {
+    super.initState();
+    _disconnectWatcher = DisconnectWatcher(
+      device: widget.device,
+      service: widget.service,
+      onGoBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
+    )..attach(context);
+  }
 
   Timer? _blinkTimer;
   // 從實測封包分析出來的：官方 App 的閃爍是快速交替送出
@@ -131,6 +143,7 @@ class _CustomModeScreenState extends State<CustomModeScreen> {
   @override
   void dispose() {
     _blinkTimer?.cancel();
+    _disconnectWatcher.detach();
     super.dispose();
   }
 

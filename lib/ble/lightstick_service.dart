@@ -51,4 +51,20 @@ class LightstickService {
   Future<void> turnOff() async {
     await sendColor(0, 0, 0);
   }
+
+  /// 斷線後重新連接：重新建立連線、重新找一次可寫入的 characteristic。
+  /// 成功回傳 true，失敗回傳 false（呼叫端可以顯示錯誤訊息）。
+  Future<bool> reconnect() async {
+    final d = device;
+    if (d == null) return false;
+    try {
+      await d.connect(timeout: const Duration(seconds: 10));
+      final c = await discoverWritableCharacteristic(d);
+      if (c == null) return false;
+      writeChar = c;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 }

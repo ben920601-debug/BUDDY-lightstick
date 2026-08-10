@@ -90,7 +90,21 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
     }
 
     if (!mounted) return;
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => builder()));
+
+    final isBleMode = _needsBle.contains(featureKey);
+    if (isBleMode) {
+      // 進入自訂模式/演唱會模式時，暫停背景輪詢設定的計時器，
+      // 避免它在背景持續發網路請求，跟藍牙寫入搶資源
+      _pollTimer?.cancel();
+    }
+
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => builder()));
+
+    if (isBleMode && mounted) {
+      // 從模式畫面返回後，恢復背景輪詢
+      _loadConfig();
+      _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) => _loadConfig());
+    }
   }
 
   Widget _modeCard({
