@@ -46,12 +46,23 @@ class LightstickService {
       throw Exception('尚未找到可寫入的 characteristic，請先連線裝置');
     }
     final packet = buildColorPacket(r, g, b);
-    // 加上逾時保護：如果寫入卡住不回應，2 秒後直接判定失敗，
-    // 讓呼叫端的「送出中」狀態能解除，不會被無限期卡住。
-    await c.write(packet, withoutResponse: true).timeout(
-      const Duration(seconds: 2),
-      onTimeout: () => throw TimeoutException('BLE 寫入逾時，可能已經斷線'),
-    );
+    final t0 = DateTime.now();
+    // ignore: avoid_print
+    print('[BLE] ${t0.toIso8601String()} 開始寫入 RGB($r,$g,$b)');
+    try {
+      await c.write(packet, withoutResponse: true).timeout(
+        const Duration(seconds: 2),
+        onTimeout: () => throw TimeoutException('BLE 寫入逾時，可能已經斷線'),
+      );
+      final ms = DateTime.now().difference(t0).inMilliseconds;
+      // ignore: avoid_print
+      print('[BLE] 寫入完成，耗時 ${ms}ms');
+    } catch (e) {
+      final ms = DateTime.now().difference(t0).inMilliseconds;
+      // ignore: avoid_print
+      print('[BLE] 寫入失敗！耗時 ${ms}ms，錯誤: $e');
+      rethrow;
+    }
   }
 
   Future<void> turnOff() async {
