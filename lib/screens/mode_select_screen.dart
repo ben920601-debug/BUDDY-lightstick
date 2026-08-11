@@ -98,7 +98,16 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
       _pollTimer?.cancel();
     }
 
-    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => builder()));
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => builder())).then((result) {
+      if (result == 'disconnected' && mounted) {
+        // ignore: avoid_print
+        print('[BLE] 使用者選擇返回選單，清除連線狀態，下次進模式會重新跳出裝置清單');
+        setState(() {
+          _service = null;
+          _device = null;
+        });
+      }
+    });
 
     if (isBleMode && mounted) {
       // 從模式畫面返回後，恢復背景輪詢

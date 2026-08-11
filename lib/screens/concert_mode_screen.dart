@@ -49,7 +49,7 @@ class _ConcertModeScreenState extends State<ConcertModeScreen> {
     _disconnectWatcher = DisconnectWatcher(
       device: widget.device,
       service: widget.service,
-      onGoBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
+      onGoBack: () => Navigator.of(context).pop('disconnected'),
     )..attach(context);
   }
 

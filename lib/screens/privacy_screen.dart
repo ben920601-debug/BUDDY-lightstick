@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../main.dart';
 import '../widgets/gradient_app_bar.dart';
+import 'board_screen.dart';
 
 class PrivacyScreen extends StatelessWidget {
   const PrivacyScreen({super.key});
@@ -48,12 +48,12 @@ class PrivacyScreen extends StatelessWidget {
             _section('政策異動', '若未來功能有變動導致資料蒐集方式改變，本頁面會同步更新。最後更新日期：2026 年 8 月。'),
             const SizedBox(height: 8),
             Center(
-              child: TextButton.icon(
-                onPressed: () => launchUrl(
-                  Uri.parse('mailto:your-email@example.com?subject=隱私權問題'),
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const BoardScreen()),
                 ),
-                icon: const Icon(Icons.mail_outline),
-                label: const Text('有隱私權相關問題，聯絡我'),
+                icon: const Icon(Icons.forum_outlined),
+                label: const Text('有隱私權相關問題？前往粉絲留言板回饋'),
               ),
             ),
           ],
