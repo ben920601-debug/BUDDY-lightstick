@@ -53,17 +53,26 @@ class _BoardScreenState extends State<BoardScreen> {
     if (nickname.isEmpty || message.isEmpty || _userId == null || _posting) return;
 
     setState(() => _posting = true);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('board_nickname', nickname);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('board_nickname', nickname);
 
-    final ok = await ApiService.postBoard(_userId!, nickname, message);
-    if (ok) {
-      _messageController.clear();
-      await _refresh();
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('送出失敗，請稍後再試')));
+      final error = await ApiService.postBoard(_userId!, nickname, message);
+      if (error == null) {
+        _messageController.clear();
+        await _refresh();
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('發生未預期的錯誤：$e')));
+      }
+    } finally {
+      // 不管成功、失敗、還是丟例外，一定要把送出按鈕恢復，
+      // 避免使用者卡在「傳送中」轉圈圈畫面沒有任何反應
+      if (mounted) setState(() => _posting = false);
     }
-    if (mounted) setState(() => _posting = false);
   }
 
   Future<void> _report(int postId) async {
@@ -104,7 +113,7 @@ class _BoardScreenState extends State<BoardScreen> {
             color: kCloudDancer,
             padding: const EdgeInsets.all(12),
             child: const Text(
-              '歡迎進入粉絲留言版，此留言版為公開版，所有留言皆可見，留言前請務必三思且友善，謝謝您。',
+              '這裡是公開留言板，所有人都看得到留言內容，請勿留下個人資料。',
               style: TextStyle(fontSize: 12, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
@@ -166,7 +175,7 @@ class _BoardScreenState extends State<BoardScreen> {
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          const Text('作者回覆',
+                                          const Text('開發者回覆',
                                               style: TextStyle(fontSize: 11, color: kScubaBlue, fontWeight: FontWeight.bold)),
                                           const SizedBox(height: 4),
                                           Text(p.adminReply!, style: const TextStyle(fontSize: 13, height: 1.5)),
