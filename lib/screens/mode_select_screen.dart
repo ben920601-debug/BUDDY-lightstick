@@ -255,26 +255,26 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
               child: Column(
                 children: [
                   _modeCard(
-                    title: '自訂模式',
+                    title: '自嗨模式',
                     subtitle: '圓盤調色 + 閃爍開關',
                     icon: Icons.palette,
                     color: const Color(0xFFE05A8C),
                     onTap: () => _openMode(
                       'custom_mode',
-                      '自訂模式',
+                      '自嗨模式',
                       () => CustomModeScreen(service: _service!, device: _device!),
                     ),
                   ),
                   _modeCard(
                     title: '團體模式',
-                    subtitle: '開發中',
+                    subtitle: '開發中Coming Soon!',
                     icon: Icons.groups,
                     color: const Color(0xFF6B7280),
                     onTap: () => _openMode('group_mode', '團體模式', () => const GroupModeScreen()),
                   ),
                   _modeCard(
                     title: '演唱會模式',
-                    subtitle: '麥克風收音，音樂律動同步',
+                    subtitle: '麥克風收音，模擬演唱會中控',
                     icon: Icons.music_note,
                     color: const Color(0xFF5F4B8B),
                     onTap: () => _openMode(
@@ -308,7 +308,7 @@ class _ModeSelectScreenState extends State<ModeSelectScreen> {
                   ),
                   _modeCard(
                     title: '粉絲留言板',
-                    subtitle: '公開留言，開發者會回覆',
+                    subtitle: '公開留言，你的意見會做回覆',
                     icon: Icons.forum_outlined,
                     color: const Color(0xFFE05A8C),
                     onTap: () => _openMode('chat', '粉絲留言板', () => const BoardScreen()),

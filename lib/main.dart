@@ -7,7 +7,6 @@ void main() {
   runApp(const LightstickApp());
 }
 
-// 手燈品牌色（原本設計語彙延續，非官方應援色，純自訂配色）
 const kUltraViolet = Color(0xFF5F4B8B);
 const kScubaBlue = Color(0xFF00ABC0);
 const kCloudDancer = Color(0xFFF0EEE9);

@@ -104,7 +104,7 @@ class _BoardScreenState extends State<BoardScreen> {
             color: kCloudDancer,
             padding: const EdgeInsets.all(12),
             child: const Text(
-              '這裡是公開留言板，所有人都看得到留言內容，請勿留下個人資料。',
+              '歡迎進入粉絲留言版，此留言版為公開版，所有留言皆可見，留言前請務必三思且友善，謝謝您。',
               style: TextStyle(fontSize: 12, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
@@ -166,7 +166,7 @@ class _BoardScreenState extends State<BoardScreen> {
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          const Text('開發者回覆',
+                                          const Text('作者回覆',
                                               style: TextStyle(fontSize: 11, color: kScubaBlue, fontWeight: FontWeight.bold)),
                                           const SizedBox(height: 4),
                                           Text(p.adminReply!, style: const TextStyle(fontSize: 13, height: 1.5)),

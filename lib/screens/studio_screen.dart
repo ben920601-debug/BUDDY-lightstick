@@ -23,13 +23,13 @@ class StudioScreen extends StatelessWidget {
                     fontSize: 20, fontWeight: FontWeight.bold, color: kUltraViolet)),
             const SizedBox(height: 12),
             const Text(
-              '這是利用閒暇時間開發的個人小專案，起點是想讓手上的應援手燈多一些'
-              '官方 App 沒有的操控方式——像是更直覺的調色圓盤、跟著現場音樂律動的燈效。',
+              '身為Buddy，非常高興以粉絲的角度開發此APP，起點是想讓各家粉絲除了用藍牙控制手燈外，'
+              '還能在家體驗演唱會中控操作的體驗、跟著現場音樂律動的燈效，希望各位玩得愉快！',
               style: TextStyle(fontSize: 14, height: 1.8),
             ),
             const SizedBox(height: 20),
-            _principleRow(Icons.build_outlined, '個人開發',
-                '從硬體逆向、協定拆解到 App 開發，都是獨立完成的個人專案。'),
+            _principleRow(Icons.build_outlined, '個人工作室開發',
+                '從硬體逆向、協定拆解到 App 開發，都是站在粉絲角度調整與開發的功能。'),
             _principleRow(Icons.lock_outline, '隱私優先',
                 '不蒐集個人資料、不使用第三方分析或廣告工具，權限僅用於當下功能。'),
             _principleRow(Icons.favorite_border, '非官方粉絲專案',
