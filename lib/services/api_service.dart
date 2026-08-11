@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,7 +24,10 @@ class ApiService {
   static Future<AppConfig?> fetchConfig() async {
     try {
       final res = await http
-          .get(Uri.parse('$baseUrl/api/config'))
+          .get(
+            Uri.parse('$baseUrl/api/config'),
+            headers: {'Cache-Control': 'no-cache'},
+          )
           .timeout(const Duration(seconds: 6));
       if (res.statusCode != 200) return null;
       return AppConfig.fromJson(jsonDecode(res.body));
@@ -51,21 +55,38 @@ class ApiService {
   }
 
   static Future<List<BoardPost>> fetchBoard() async {
-    final res = await http
-        .get(Uri.parse('$baseUrl/api/board'))
-        .timeout(const Duration(seconds: 8));
-    if (res.statusCode != 200) return [];
-    final data = jsonDecode(res.body);
-    return (data['posts'] as List).map((p) => BoardPost.fromJson(p)).toList();
+    try {
+      final res = await http
+          .get(Uri.parse('$baseUrl/api/board'))
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode != 200) return [];
+      final data = jsonDecode(res.body);
+      return (data['posts'] as List).map((p) => BoardPost.fromJson(p)).toList();
+    } catch (_) {
+      return [];
+    }
   }
 
-  static Future<bool> postBoard(String userId, String nickname, String message) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/api/board'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'user_id': userId, 'nickname': nickname, 'message': message}),
-    );
-    return res.statusCode == 200;
+  /// 回傳 null 代表成功；有內容代表失敗原因（給使用者看的友善訊息）
+  static Future<String?> postBoard(String userId, String nickname, String message) async {
+    try {
+      final res = await http
+          .post(
+            Uri.parse('$baseUrl/api/board'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'user_id': userId, 'nickname': nickname, 'message': message}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (res.statusCode == 200) return null;
+      if (res.statusCode == 403) return '你目前無法在留言板發言';
+      if (res.statusCode == 400) return '暱稱或內容格式有誤（可能太長），請修改後再試';
+      return '伺服器暫時無法處理（錯誤碼 ${res.statusCode}），請稍後再試';
+    } on TimeoutException {
+      return '連線逾時，請確認網路狀況後再試';
+    } catch (_) {
+      return '連線失敗，請確認網路狀況後再試';
+    }
   }
 
   static Future<void> reportBoardPost(int postId) async {

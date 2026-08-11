@@ -14,6 +14,18 @@ import '../main.dart';
 import '../widgets/disconnect_watcher.dart';
 import '../widgets/gradient_app_bar.dart';
 
+/// 演唱會模式 v3
+///
+/// 跟 v2 的差異：
+/// - 錄音引擎從 audio_streamer 換成 record，跟 audio_session 搭配更穩定，
+///   解決錄音時手機喇叭外放音樂被降級成通話音質的問題
+/// - FFT 視窗從 1024 加大到 2048（頻率解析度更細），且套用 Hann 窗函數
+///   減少頻譜洩漏，音高判斷更準
+/// - 用諧波乘積頻譜（Harmonic Product Spectrum）取代單純抓最大峰值，
+///   避免常見的「抓到泛音、不是真正基音」的誤判
+/// - 手動模式也會隨音量連續調整亮度，不再只有節拍那一瞬間才有反應
+/// - 新增「高潮偵測」：能量持續明顯高於這首歌的長期平均一段時間，
+///   判定進入高潮，改成連續閃爍；能量降回正常水準才切回原本的模式
 class ConcertModeScreen extends StatefulWidget {
   final LightstickService service;
   final BluetoothDevice device;
@@ -60,18 +72,19 @@ class _ConcertModeScreenState extends State<ConcertModeScreen> {
   bool _bleBusy = false;
 
   double _currentFreq = 0;
-  double _currentEnergy = 
-  double _longEnergyAvg = 0; 
+  double _currentEnergy = 0;
+  double _energyAvg = 0; // 短期移動平均：抓單次節拍用
+  double _longEnergyAvg = 0; // 長期移動平均：這首歌大概多大聲的基準，判斷高潮用
   int _beatCount = 0;
   DateTime _lastBeat = DateTime.fromMillisecondsSinceEpoch(0);
 
   double _sensitivity = 1.6;
   static const Duration _minBeatGap = Duration(milliseconds: 180);
 
-
+  // 高潮偵測：能量要「持續」比長期平均高出這個倍數一段時間才算數
   double _climaxRatio = 1.8;
   static const Duration _climaxSustain = Duration(milliseconds: 700);
-  static const double _climaxExitRatio = 1.2; 
+  static const double _climaxExitRatio = 1.2; // 降到這個倍數以下才判定離開高潮
   DateTime? _climaxCandidateStart;
   bool _climaxActive = false;
 
@@ -100,6 +113,11 @@ class _ConcertModeScreenState extends State<ConcertModeScreen> {
     return status.isGranted;
   }
 
+  /// 明確設定音訊工作階段的「偏好」：輸出優先走喇叭、不打斷其他 App 播放。
+  /// 注意：這裡刻意不呼叫 session.setActive(true)——實際啟用交給 record
+  /// 套件自己在 startStream 時處理，如果我們搶著啟用，會跟 record 內部
+  /// 的啟用動作互相衝突，導致錄音引擎完全沒有真的啟動（沒有錯誤訊息，
+  /// 但完全收不到音訊資料，能量條、音高都會卡住不動）。
   Future<void> _configureAudioSession() async {
     final session = await AudioSession.instance;
     await session.configure(AudioSessionConfiguration(
